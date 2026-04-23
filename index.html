@@ -46,7 +46,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3rem;
+    gap: 2.5rem;
   }
 
   h1 {
@@ -55,6 +55,44 @@
     letter-spacing: 0.35em;
     text-transform: uppercase;
     color: var(--mid);
+  }
+
+  /* mode selector */
+  .modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    justify-content: center;
+  }
+
+  .mode-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: lowercase;
+    background: transparent;
+    color: var(--dim);
+    border: 1px solid var(--dim);
+    margin: -0.5px;
+    padding: 0.55rem 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .mode-btn:hover {
+    color: var(--mid);
+    border-color: var(--mid);
+    z-index: 1;
+    position: relative;
+  }
+
+  .mode-btn.active {
+    color: var(--fg);
+    border-color: var(--mid);
+    z-index: 2;
+    position: relative;
   }
 
   /* SVG visual */
@@ -71,15 +109,16 @@
 
   /* prompt text */
   .prompt-text {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 400;
-    line-height: 1.8;
+    line-height: 1.9;
     text-align: center;
     color: var(--fg);
-    min-height: 4.5em;
+    min-height: 4em;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0 1rem;
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.6s ease, transform 0.6s ease;
@@ -126,6 +165,8 @@
   @media (max-width: 500px) {
     .prompt-text { font-size: 1rem; }
     .visual { width: 160px; height: 160px; }
+    .modes { gap: 0; }
+    .mode-btn { font-size: 0.5rem; padding: 0.45rem 0.7rem; }
   }
 </style>
 </head>
@@ -133,6 +174,15 @@
 
 <div class="container">
   <h1>writing prompt</h1>
+
+  <div class="modes" id="modes">
+    <button class="mode-btn active" data-mode="freewrite">just write</button>
+    <button class="mode-btn" data-mode="journal">journal</button>
+    <button class="mode-btn" data-mode="poetry">poetry</button>
+    <button class="mode-btn" data-mode="story">short story</button>
+    <button class="mode-btn" data-mode="reflection">reflection</button>
+  </div>
+
   <div class="visual" id="visual"></div>
   <div class="prompt-text" id="prompt"></div>
   <button class="generate-btn" id="btn">generate</button>
@@ -141,71 +191,166 @@
 <div class="footer">press space or click</div>
 
 <script>
-// ── Prompt data ──
-const subjects = [
-  "A lighthouse keeper", "An astronaut", "A retired thief",
-  "A child who can hear colours", "A cartographer of imaginary places",
-  "The last librarian on earth", "A clockmaker", "A ghost who forgot how they died",
-  "A woman who collects other people's shadows", "An AI that dreams",
-  "A gardener in a city with no sun", "A translator of dead languages",
-  "A photographer who can only shoot at midnight", "A surgeon with trembling hands",
-  "A blind painter", "Someone who wakes up in a stranger's body every Monday",
-  "A musician who has never heard music", "A traveller stuck between two timezones",
-  "A poet employed by the government", "A forger of famous paintings"
-];
+// ── Prompts by mode ──
+const prompts = {
+  freewrite: [
+    "the colour of 6am",
+    "what your hands remember",
+    "a door left open",
+    "the weight of an empty room",
+    "something you almost said",
+    "the last thing you heard before falling asleep",
+    "write about a sound you can't name",
+    "an object you've kept too long",
+    "the space between two breaths",
+    "a word that feels like home",
+    "what does silence look like?",
+    "the shape of waiting",
+    "write without stopping about water",
+    "something small you noticed today",
+    "a smell that takes you somewhere",
+    "the first sentence of something unfinished",
+    "describe the light right now",
+    "a lie you told yourself",
+    "what you'd say to the dark",
+    "start with: I keep coming back to—",
+    "a room you'll never enter again",
+    "the texture of forgetting",
+    "three things on your desk. go.",
+    "a conversation you overheard",
+    "what your shadow knows",
+    "the gap between the plan and the day",
+    "start with the weather. see where it goes.",
+    "a question with no good answer",
+    "what you were doing ten years ago today",
+    "write the word 'anyway' and keep going",
+  ],
 
-const actions = [
-  "discovers a door that wasn't there yesterday",
-  "receives a letter written in their own handwriting",
-  "finds a photograph of a place they've only seen in dreams",
-  "hears a voice coming from inside the walls",
-  "wakes up to find the world has gone silent",
-  "must choose between two versions of the truth",
-  "follows a stranger who looks exactly like them",
-  "opens a book and the pages are blank except for one sentence",
-  "notices the sky has turned the wrong colour",
-  "realizes they've been telling the same story their whole life",
-  "finds a key that fits no lock they've ever seen",
-  "watches a memory play out in reverse",
-  "is given 24 hours to forget everything",
-  "builds something that wasn't meant to exist",
-  "starts receiving messages from the future",
-  "discovers their reflection is three seconds behind",
-  "finds a map that leads to nowhere",
-  "speaks to someone who has been dead for years",
-  "uncovers a room full of unsent letters",
-  "writes a word that changes reality"
-];
+  journal: [
+    "what am I avoiding right now?",
+    "what would today look like if I were brave?",
+    "what's taking up the most space in my head?",
+    "when did I last feel completely present?",
+    "what am I grateful for that I usually ignore?",
+    "what boundary do I keep letting slide?",
+    "if I trusted myself fully, what would I do next?",
+    "what's one thing I'd change about yesterday?",
+    "who do I become when no one is watching?",
+    "what conversation am I putting off?",
+    "what would I tell my younger self about this week?",
+    "what did I learn about myself recently?",
+    "where in my body am I holding tension right now?",
+    "what do I need that I'm not asking for?",
+    "what's something I outgrew but haven't let go of?",
+    "what does rest actually look like for me?",
+    "what am I pretending is fine?",
+    "what would enough look like today?",
+    "what's a pattern I keep repeating?",
+    "what would I do with a completely empty day?",
+    "what am I building right now, even if slowly?",
+    "what's the kindest thing someone did for me lately?",
+    "where am I going? do I want to go there?",
+    "what am I holding onto out of fear?",
+    "what does my ideal morning feel like?",
+  ],
 
-const settings = [
-  "in a town that only appears on foggy nights",
-  "aboard a train with no final stop",
-  "inside an abandoned observatory",
-  "on the shore of a sea that glows",
-  "in a library where the books rearrange themselves",
-  "at the edge of a forest that hums",
-  "in a city built entirely underground",
-  "during the longest night of the year",
-  "inside a house made of mirrors",
-  "on a bridge between two countries that no longer exist",
-  "in a garden where nothing ever dies",
-  "at a crossroads in the middle of the desert",
-  "on the top floor of a building no one remembers constructing",
-  "in a museum after closing time",
-  "beneath a sky with two moons",
-  "", "", "", "" // sometimes no setting — keep it tighter
-];
+  poetry: [
+    "write a poem that fits in a matchbox",
+    "bones",
+    "the ocean at the wrong hour",
+    "a love poem to something ordinary",
+    "rust",
+    "say the word 'tender' five different ways",
+    "a poem made only of questions",
+    "the last line is: and still, it grows.",
+    "moths / light / what we're drawn to",
+    "the opposite of a prayer",
+    "a colour no one has named yet",
+    "write from the perspective of rain",
+    "an elegy for something small",
+    "the first line is: I was not built for this.",
+    "a poem using only one-syllable words",
+    "hunger — but not for food",
+    "threshold",
+    "a letter to a season",
+    "the geometry of grief",
+    "something sharp, something soft, the space between",
+    "honey and smoke",
+    "the body as landscape",
+    "write a poem backwards",
+    "an apology to your own hands",
+    "salt",
+  ],
 
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  story: [
+    "it started with the wrong suitcase",
+    "the town had one rule nobody talked about",
+    "she found the note inside a library book",
+    "the last customer of the night",
+    "a gift that arrives 20 years late",
+    "two strangers. a waiting room. one secret.",
+    "the house remembers everything",
+    "a promise kept in the worst way",
+    "the year the birds stopped singing",
+    "a character who can only tell the truth for one day",
+    "the photograph was impossible",
+    "begin at the ending",
+    "a meal between enemies",
+    "something is different about the neighbour's garden",
+    "the letter was not meant for you",
+    "a job interview for a position that doesn't exist",
+    "the bridge nobody crosses after dark",
+    "they agreed to meet one more time",
+    "the map had one extra room",
+    "write 500 words about a key",
+    "someone returns to a place that no longer exists",
+    "the thing she carried in her coat pocket",
+    "a phone rings in an empty building",
+    "the auction of unclaimed belongings",
+    "the morning after something unnamed",
+  ],
+
+  reflection: [
+    "what does it mean to belong somewhere?",
+    "when did you first understand loss?",
+    "what have you inherited that isn't yours?",
+    "what does your relationship with time look like?",
+    "what would you un-learn if you could?",
+    "who are you when you're not performing?",
+    "what's the most honest thing you know?",
+    "how has your definition of success changed?",
+    "what are you in the middle of becoming?",
+    "what does your loneliness sound like?",
+    "what do you owe to the person you used to be?",
+    "what's a belief you've quietly abandoned?",
+    "how do you know when something is over?",
+    "what would you make if no one would ever see it?",
+    "what's the difference between being alone and being lonely?",
+    "what do you keep returning to in your mind?",
+    "what does forgiveness actually require?",
+    "what are you afraid to want?",
+    "how do you hold contradictions within yourself?",
+    "when do you feel most like yourself?",
+    "what story do you tell about your life? is it true?",
+    "what would you say to someone standing where you stood a year ago?",
+    "what does courage look like in ordinary life?",
+    "what are you protecting by staying quiet?",
+    "what would it mean to stop keeping score?",
+  ]
+};
+
+let currentMode = 'freewrite';
+let lastIndex = -1;
+
+function pick(arr) {
+  let idx;
+  do { idx = Math.floor(Math.random() * arr.length); } while (idx === lastIndex && arr.length > 1);
+  lastIndex = idx;
+  return arr[idx];
+}
 
 function generatePrompt() {
-  const s = pick(subjects);
-  const a = pick(actions);
-  const loc = pick(settings);
-  let prompt = `${s} ${a}`;
-  if (loc) prompt += ` ${loc}`;
-  prompt += '.';
-  return prompt;
+  return pick(prompts[currentMode]);
 }
 
 // ── Generative SVG visual ──
@@ -320,28 +465,34 @@ function generateVisual() {
 const promptEl = document.getElementById('prompt');
 const visualEl = document.getElementById('visual');
 const btn = document.getElementById('btn');
+const modeButtons = document.querySelectorAll('.mode-btn');
 
 function go() {
-  // fade out
   promptEl.classList.remove('visible');
 
   setTimeout(() => {
-    // update visual
     visualEl.innerHTML = '';
     visualEl.appendChild(generateVisual());
-
-    // update text
     promptEl.textContent = generatePrompt();
     promptEl.classList.add('visible');
   }, 300);
 }
+
+modeButtons.forEach(b => {
+  b.addEventListener('click', () => {
+    modeButtons.forEach(m => m.classList.remove('active'));
+    b.classList.add('active');
+    currentMode = b.dataset.mode;
+    lastIndex = -1;
+    go();
+  });
+});
 
 btn.addEventListener('click', go);
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); go(); }
 });
 
-// initial
 go();
 </script>
 </body>
