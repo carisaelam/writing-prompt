@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>writing prompt</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e0e0e;
+    --fg: #e0e0e0;
+    --mid: #888;
+    --dim: #333;
+    --accent: #c0c0c0;
+  }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
+  }
+
+  /* grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .container {
+    max-width: 640px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  h1 {
+    font-size: 0.7rem;
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  /* SVG visual */
+  .visual {
+    width: 220px;
+    height: 220px;
+    transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .visual svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* prompt text */
+  .prompt-text {
+    font-size: 1.2rem;
+    font-weight: 400;
+    line-height: 1.8;
+    text-align: center;
+    color: var(--fg);
+    min-height: 4.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .prompt-text.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* button */
+  .generate-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--mid);
+    border: 1px solid var(--dim);
+    padding: 0.8rem 2.4rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .generate-btn:hover {
+    color: var(--fg);
+    border-color: var(--mid);
+  }
+
+  .generate-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* footer */
+  .footer {
+    position: fixed;
+    bottom: 1.5rem;
+    font-size: 0.55rem;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+  }
+
+  @media (max-width: 500px) {
+    .prompt-text { font-size: 1rem; }
+    .visual { width: 160px; height: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>writing prompt</h1>
+  <div class="visual" id="visual"></div>
+  <div class="prompt-text" id="prompt"></div>
+  <button class="generate-btn" id="btn">generate</button>
+</div>
+
+<div class="footer">press space or click</div>
+
+<script>
+// ── Prompt data ──
+const subjects = [
+  "A lighthouse keeper", "An astronaut", "A retired thief",
+  "A child who can hear colours", "A cartographer of imaginary places",
+  "The last librarian on earth", "A clockmaker", "A ghost who forgot how they died",
+  "A woman who collects other people's shadows", "An AI that dreams",
+  "A gardener in a city with no sun", "A translator of dead languages",
+  "A photographer who can only shoot at midnight", "A surgeon with trembling hands",
+  "A blind painter", "Someone who wakes up in a stranger's body every Monday",
+  "A musician who has never heard music", "A traveller stuck between two timezones",
+  "A poet employed by the government", "A forger of famous paintings"
+];
+
+const actions = [
+  "discovers a door that wasn't there yesterday",
+  "receives a letter written in their own handwriting",
+  "finds a photograph of a place they've only seen in dreams",
+  "hears a voice coming from inside the walls",
+  "wakes up to find the world has gone silent",
+  "must choose between two versions of the truth",
+  "follows a stranger who looks exactly like them",
+  "opens a book and the pages are blank except for one sentence",
+  "notices the sky has turned the wrong colour",
+  "realizes they've been telling the same story their whole life",
+  "finds a key that fits no lock they've ever seen",
+  "watches a memory play out in reverse",
+  "is given 24 hours to forget everything",
+  "builds something that wasn't meant to exist",
+  "starts receiving messages from the future",
+  "discovers their reflection is three seconds behind",
+  "finds a map that leads to nowhere",
+  "speaks to someone who has been dead for years",
+  "uncovers a room full of unsent letters",
+  "writes a word that changes reality"
+];
+
+const settings = [
+  "in a town that only appears on foggy nights",
+  "aboard a train with no final stop",
+  "inside an abandoned observatory",
+  "on the shore of a sea that glows",
+  "in a library where the books rearrange themselves",
+  "at the edge of a forest that hums",
+  "in a city built entirely underground",
+  "during the longest night of the year",
+  "inside a house made of mirrors",
+  "on a bridge between two countries that no longer exist",
+  "in a garden where nothing ever dies",
+  "at a crossroads in the middle of the desert",
+  "on the top floor of a building no one remembers constructing",
+  "in a museum after closing time",
+  "beneath a sky with two moons",
+  "", "", "", "" // sometimes no setting — keep it tighter
+];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generatePrompt() {
+  const s = pick(subjects);
+  const a = pick(actions);
+  const loc = pick(settings);
+  let prompt = `${s} ${a}`;
+  if (loc) prompt += ` ${loc}`;
+  prompt += '.';
+  return prompt;
+}
+
+// ── Generative SVG visual ──
+function generateVisual() {
+  const ns = 'http://www.w3.org/2000/svg';
+  const size = 220;
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('fill', 'none');
+
+  const type = Math.floor(Math.random() * 5);
+
+  if (type === 0) {
+    // concentric circles
+    const count = 6 + Math.floor(Math.random() * 8);
+    for (let i = count; i >= 1; i--) {
+      const c = document.createElementNS(ns, 'circle');
+      const r = (i / count) * 90;
+      c.setAttribute('cx', size / 2);
+      c.setAttribute('cy', size / 2);
+      c.setAttribute('r', r);
+      const opacity = 0.08 + (i / count) * 0.35;
+      c.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
+      c.setAttribute('stroke-width', '0.5');
+      const dashLen = Math.random() * 8 + 2;
+      if (Math.random() > 0.4) c.setAttribute('stroke-dasharray', `${dashLen} ${dashLen * 1.5}`);
+      svg.appendChild(c);
+    }
+  } else if (type === 1) {
+    // radiating lines from center
+    const count = 20 + Math.floor(Math.random() * 30);
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.1;
+      const innerR = 10 + Math.random() * 30;
+      const outerR = 50 + Math.random() * 55;
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', size/2 + Math.cos(angle) * innerR);
+      line.setAttribute('y1', size/2 + Math.sin(angle) * innerR);
+      line.setAttribute('x2', size/2 + Math.cos(angle) * outerR);
+      line.setAttribute('y2', size/2 + Math.sin(angle) * outerR);
+      const opacity = 0.1 + Math.random() * 0.3;
+      line.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
+      line.setAttribute('stroke-width', Math.random() > 0.7 ? '1' : '0.5');
+      svg.appendChild(line);
+    }
+  } else if (type === 2) {
+    // grid of dots with displacement
+    const cols = 12;
+    const spacing = size / (cols + 1);
+    for (let x = 1; x <= cols; x++) {
+      for (let y = 1; y <= cols; y++) {
+        const dx = (Math.random() - 0.5) * spacing * 0.6;
+        const dy = (Math.random() - 0.5) * spacing * 0.6;
+        const dist = Math.hypot(x - cols/2, y - cols/2);
+        const maxDist = Math.hypot(cols/2, cols/2);
+        const r = 0.5 + (1 - dist / maxDist) * 2;
+        const opacity = 0.1 + (1 - dist / maxDist) * 0.5;
+        const circle = document.createElementNS(ns, 'circle');
+        circle.setAttribute('cx', x * spacing + dx);
+        circle.setAttribute('cy', y * spacing + dy);
+        circle.setAttribute('r', r);
+        circle.setAttribute('fill', `rgba(200,200,200,${opacity})`);
+        svg.appendChild(circle);
+      }
+    }
+  } else if (type === 3) {
+    // flowing curves
+    const count = 5 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < count; i++) {
+      const path = document.createElementNS(ns, 'path');
+      const yBase = 30 + (i / count) * 160;
+      const amp = 15 + Math.random() * 40;
+      const freq = 0.01 + Math.random() * 0.03;
+      const phase = Math.random() * Math.PI * 2;
+      let d = `M 10 ${yBase}`;
+      for (let x = 10; x <= 210; x += 4) {
+        const y = yBase + Math.sin(x * freq + phase) * amp;
+        d += ` L ${x} ${y}`;
+      }
+      path.setAttribute('d', d);
+      const opacity = 0.1 + Math.random() * 0.25;
+      path.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
+      path.setAttribute('stroke-width', '0.7');
+      path.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(path);
+    }
+  } else {
+    // nested rectangles / squares
+    const count = 5 + Math.floor(Math.random() * 6);
+    for (let i = count; i >= 1; i--) {
+      const rect = document.createElementNS(ns, 'rect');
+      const s = (i / count) * 170;
+      const offset = (size - s) / 2;
+      const rotation = (Math.random() - 0.5) * 15;
+      rect.setAttribute('x', offset);
+      rect.setAttribute('y', offset);
+      rect.setAttribute('width', s);
+      rect.setAttribute('height', s);
+      rect.setAttribute('transform', `rotate(${rotation} ${size/2} ${size/2})`);
+      const opacity = 0.08 + (i / count) * 0.3;
+      rect.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
+      rect.setAttribute('stroke-width', '0.5');
+      rect.setAttribute('fill', 'none');
+      svg.appendChild(rect);
+    }
+  }
+
+  return svg;
+}
+
+// ── Wire up ──
+const promptEl = document.getElementById('prompt');
+const visualEl = document.getElementById('visual');
+const btn = document.getElementById('btn');
+
+function go() {
+  // fade out
+  promptEl.classList.remove('visible');
+
+  setTimeout(() => {
+    // update visual
+    visualEl.innerHTML = '';
+    visualEl.appendChild(generateVisual());
+
+    // update text
+    promptEl.textContent = generatePrompt();
+    promptEl.classList.add('visible');
+  }, 300);
+}
+
+btn.addEventListener('click', go);
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); go(); }
+});
+
+// initial
+go();
+</script>
+</body>
+</html>
