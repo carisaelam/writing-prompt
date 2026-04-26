@@ -191,160 +191,48 @@
 <div class="footer">press space or click</div>
 
 <script>
-// ── Prompts by mode ──
-const prompts = {
+const FALLBACK_PROMPTS = {
   freewrite: [
     "the colour of 6am",
     "what your hands remember",
     "a door left open",
-    "the weight of an empty room",
-    "something you almost said",
-    "the last thing you heard before falling asleep",
-    "write about a sound you can't name",
-    "an object you've kept too long",
-    "the space between two breaths",
-    "a word that feels like home",
-    "what does silence look like?",
-    "the shape of waiting",
-    "write without stopping about water",
-    "something small you noticed today",
-    "a smell that takes you somewhere",
-    "the first sentence of something unfinished",
-    "describe the light right now",
-    "a lie you told yourself",
-    "what you'd say to the dark",
-    "start with: I keep coming back to—",
-    "a room you'll never enter again",
-    "the texture of forgetting",
-    "three things on your desk. go.",
-    "a conversation you overheard",
-    "what your shadow knows",
-    "the gap between the plan and the day",
-    "start with the weather. see where it goes.",
-    "a question with no good answer",
-    "what you were doing ten years ago today",
-    "write the word 'anyway' and keep going",
+    "something you almost said"
   ],
-
   journal: [
     "what am I avoiding right now?",
     "what would today look like if I were brave?",
     "what's taking up the most space in my head?",
-    "when did I last feel completely present?",
-    "what am I grateful for that I usually ignore?",
-    "what boundary do I keep letting slide?",
-    "if I trusted myself fully, what would I do next?",
-    "what's one thing I'd change about yesterday?",
-    "who do I become when no one is watching?",
-    "what conversation am I putting off?",
-    "what would I tell my younger self about this week?",
-    "what did I learn about myself recently?",
-    "where in my body am I holding tension right now?",
-    "what do I need that I'm not asking for?",
-    "what's something I outgrew but haven't let go of?",
-    "what does rest actually look like for me?",
-    "what am I pretending is fine?",
-    "what would enough look like today?",
-    "what's a pattern I keep repeating?",
-    "what would I do with a completely empty day?",
-    "what am I building right now, even if slowly?",
-    "what's the kindest thing someone did for me lately?",
-    "where am I going? do I want to go there?",
-    "what am I holding onto out of fear?",
-    "what does my ideal morning feel like?",
+    "what am I pretending is fine?"
   ],
-
   poetry: [
     "write a poem that fits in a matchbox",
     "bones",
     "the ocean at the wrong hour",
-    "a love poem to something ordinary",
-    "rust",
-    "say the word 'tender' five different ways",
-    "a poem made only of questions",
-    "the last line is: and still, it grows.",
-    "moths / light / what we're drawn to",
-    "the opposite of a prayer",
-    "a colour no one has named yet",
-    "write from the perspective of rain",
-    "an elegy for something small",
-    "the first line is: I was not built for this.",
-    "a poem using only one-syllable words",
-    "hunger — but not for food",
-    "threshold",
-    "a letter to a season",
-    "the geometry of grief",
-    "something sharp, something soft, the space between",
-    "honey and smoke",
-    "the body as landscape",
-    "write a poem backwards",
-    "an apology to your own hands",
-    "salt",
+    "an elegy for something small"
   ],
-
   story: [
     "it started with the wrong suitcase",
     "the town had one rule nobody talked about",
     "she found the note inside a library book",
-    "the last customer of the night",
-    "a gift that arrives 20 years late",
-    "two strangers. a waiting room. one secret.",
-    "the house remembers everything",
-    "a promise kept in the worst way",
-    "the year the birds stopped singing",
-    "a character who can only tell the truth for one day",
-    "the photograph was impossible",
-    "begin at the ending",
-    "a meal between enemies",
-    "something is different about the neighbour's garden",
-    "the letter was not meant for you",
-    "a job interview for a position that doesn't exist",
-    "the bridge nobody crosses after dark",
-    "they agreed to meet one more time",
-    "the map had one extra room",
-    "write 500 words about a key",
-    "someone returns to a place that no longer exists",
-    "the thing she carried in her coat pocket",
-    "a phone rings in an empty building",
-    "the auction of unclaimed belongings",
-    "the morning after something unnamed",
+    "the morning after something unnamed"
   ],
-
   reflection: [
     "what does it mean to belong somewhere?",
     "when did you first understand loss?",
     "what have you inherited that isn't yours?",
-    "what does your relationship with time look like?",
-    "what would you un-learn if you could?",
-    "who are you when you're not performing?",
-    "what's the most honest thing you know?",
-    "how has your definition of success changed?",
-    "what are you in the middle of becoming?",
-    "what does your loneliness sound like?",
-    "what do you owe to the person you used to be?",
-    "what's a belief you've quietly abandoned?",
-    "how do you know when something is over?",
-    "what would you make if no one would ever see it?",
-    "what's the difference between being alone and being lonely?",
-    "what do you keep returning to in your mind?",
-    "what does forgiveness actually require?",
-    "what are you afraid to want?",
-    "how do you hold contradictions within yourself?",
-    "when do you feel most like yourself?",
-    "what story do you tell about your life? is it true?",
-    "what would you say to someone standing where you stood a year ago?",
-    "what does courage look like in ordinary life?",
-    "what are you protecting by staying quiet?",
-    "what would it mean to stop keeping score?",
+    "what are you protecting by staying quiet?"
   ]
 };
 
+let prompts = null;
 let currentMode = 'freewrite';
 let lastIndex = -1;
 
 function pick(arr) {
   let idx;
-  do { idx = Math.floor(Math.random() * arr.length); } while (idx === lastIndex && arr.length > 1);
+  do {
+    idx = Math.floor(Math.random() * arr.length);
+  } while (idx === lastIndex && arr.length > 1);
   lastIndex = idx;
   return arr[idx];
 }
@@ -478,22 +366,45 @@ function go() {
   }, 300);
 }
 
-modeButtons.forEach(b => {
-  b.addEventListener('click', () => {
-    modeButtons.forEach(m => m.classList.remove('active'));
-    b.classList.add('active');
-    currentMode = b.dataset.mode;
-    lastIndex = -1;
-    go();
+function bindInteractions() {
+  modeButtons.forEach(b => {
+    b.addEventListener('click', () => {
+      modeButtons.forEach(m => m.classList.remove('active'));
+      b.classList.add('active');
+      currentMode = b.dataset.mode;
+      lastIndex = -1;
+      go();
+    });
   });
-});
 
-btn.addEventListener('click', go);
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'Space') { e.preventDefault(); go(); }
-});
+  btn.addEventListener('click', go);
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      go();
+    }
+  });
+}
 
-go();
+async function loadPrompts() {
+  const response = await fetch('./prompts.json', { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to load prompts.json: ${response.status}`);
+  }
+  return response.json();
+}
+
+(async () => {
+  try {
+    prompts = await loadPrompts();
+  } catch (error) {
+    console.warn('Using fallback prompts because prompts.json could not be loaded.', error);
+    prompts = FALLBACK_PROMPTS;
+  }
+
+  bindInteractions();
+  go();
+})();
 </script>
 </body>
 </html>
