@@ -190,6 +190,7 @@
 
 <div class="footer">press space or click</div>
 
+<script src="./visuals.js"></script>
 <script>
 const FALLBACK_PROMPTS = {
   freewrite: [
@@ -239,114 +240,6 @@ function pick(arr) {
 
 function generatePrompt() {
   return pick(prompts[currentMode]);
-}
-
-// ── Generative SVG visual ──
-function generateVisual() {
-  const ns = 'http://www.w3.org/2000/svg';
-  const size = 220;
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-  svg.setAttribute('fill', 'none');
-
-  const type = Math.floor(Math.random() * 5);
-
-  if (type === 0) {
-    // concentric circles
-    const count = 6 + Math.floor(Math.random() * 8);
-    for (let i = count; i >= 1; i--) {
-      const c = document.createElementNS(ns, 'circle');
-      const r = (i / count) * 90;
-      c.setAttribute('cx', size / 2);
-      c.setAttribute('cy', size / 2);
-      c.setAttribute('r', r);
-      const opacity = 0.08 + (i / count) * 0.35;
-      c.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
-      c.setAttribute('stroke-width', '0.5');
-      const dashLen = Math.random() * 8 + 2;
-      if (Math.random() > 0.4) c.setAttribute('stroke-dasharray', `${dashLen} ${dashLen * 1.5}`);
-      svg.appendChild(c);
-    }
-  } else if (type === 1) {
-    // radiating lines from center
-    const count = 20 + Math.floor(Math.random() * 30);
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.1;
-      const innerR = 10 + Math.random() * 30;
-      const outerR = 50 + Math.random() * 55;
-      const line = document.createElementNS(ns, 'line');
-      line.setAttribute('x1', size/2 + Math.cos(angle) * innerR);
-      line.setAttribute('y1', size/2 + Math.sin(angle) * innerR);
-      line.setAttribute('x2', size/2 + Math.cos(angle) * outerR);
-      line.setAttribute('y2', size/2 + Math.sin(angle) * outerR);
-      const opacity = 0.1 + Math.random() * 0.3;
-      line.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
-      line.setAttribute('stroke-width', Math.random() > 0.7 ? '1' : '0.5');
-      svg.appendChild(line);
-    }
-  } else if (type === 2) {
-    // grid of dots with displacement
-    const cols = 12;
-    const spacing = size / (cols + 1);
-    for (let x = 1; x <= cols; x++) {
-      for (let y = 1; y <= cols; y++) {
-        const dx = (Math.random() - 0.5) * spacing * 0.6;
-        const dy = (Math.random() - 0.5) * spacing * 0.6;
-        const dist = Math.hypot(x - cols/2, y - cols/2);
-        const maxDist = Math.hypot(cols/2, cols/2);
-        const r = 0.5 + (1 - dist / maxDist) * 2;
-        const opacity = 0.1 + (1 - dist / maxDist) * 0.5;
-        const circle = document.createElementNS(ns, 'circle');
-        circle.setAttribute('cx', x * spacing + dx);
-        circle.setAttribute('cy', y * spacing + dy);
-        circle.setAttribute('r', r);
-        circle.setAttribute('fill', `rgba(200,200,200,${opacity})`);
-        svg.appendChild(circle);
-      }
-    }
-  } else if (type === 3) {
-    // flowing curves
-    const count = 5 + Math.floor(Math.random() * 6);
-    for (let i = 0; i < count; i++) {
-      const path = document.createElementNS(ns, 'path');
-      const yBase = 30 + (i / count) * 160;
-      const amp = 15 + Math.random() * 40;
-      const freq = 0.01 + Math.random() * 0.03;
-      const phase = Math.random() * Math.PI * 2;
-      let d = `M 10 ${yBase}`;
-      for (let x = 10; x <= 210; x += 4) {
-        const y = yBase + Math.sin(x * freq + phase) * amp;
-        d += ` L ${x} ${y}`;
-      }
-      path.setAttribute('d', d);
-      const opacity = 0.1 + Math.random() * 0.25;
-      path.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
-      path.setAttribute('stroke-width', '0.7');
-      path.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(path);
-    }
-  } else {
-    // nested rectangles / squares
-    const count = 5 + Math.floor(Math.random() * 6);
-    for (let i = count; i >= 1; i--) {
-      const rect = document.createElementNS(ns, 'rect');
-      const s = (i / count) * 170;
-      const offset = (size - s) / 2;
-      const rotation = (Math.random() - 0.5) * 15;
-      rect.setAttribute('x', offset);
-      rect.setAttribute('y', offset);
-      rect.setAttribute('width', s);
-      rect.setAttribute('height', s);
-      rect.setAttribute('transform', `rotate(${rotation} ${size/2} ${size/2})`);
-      const opacity = 0.08 + (i / count) * 0.3;
-      rect.setAttribute('stroke', `rgba(200,200,200,${opacity})`);
-      rect.setAttribute('stroke-width', '0.5');
-      rect.setAttribute('fill', 'none');
-      svg.appendChild(rect);
-    }
-  }
-
-  return svg;
 }
 
 // ── Wire up ──
